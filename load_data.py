@@ -11,6 +11,7 @@ import math
 import torch
 from PIL import Image
 from matplotlib import pyplot as plt
+import torchvision.transforms as T
 
 import constants as C
 import utils
@@ -248,10 +249,14 @@ class SEED_data(torch.utils.data.Dataset):
         if self.transform is not None:
             el_data = self.transform(el_data)
         if self.train:
-            el_target = el_data[[-1], :, :]
-            el_data = el_data[:-1, :, :]
-            if self.unnormalize_target:
-                el_target = utils.unnormalize(el_target)
+            if isinstance(el_data, Image.Image):
+                r, g, b, el_target = el_data.split()
+                el_data = Image.merge('RGB', (r, g, b))
+            else:
+                el_target = el_data[[-1], :, :]
+                el_data = el_data[:-1, :, :]
+                if self.unnormalize_target:
+                    el_target = utils.unnormalize(el_target)
             if self.target_transform is not None:
                 el_target = self.target_transform(el_target)
             info["target"] = el_target
@@ -265,7 +270,7 @@ class SEED_data(torch.utils.data.Dataset):
 
 
 def _main():
-    import torchvision.transforms as T
+
 
     transform = T.Compose([T.ToTensor(), T.Normalize((0.5), (0.5))])
 

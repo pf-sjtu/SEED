@@ -6,7 +6,6 @@ Created on Thu Sep 17 21:41:15 2020
 @email:  im.pengf@outlook.com
 """
 from PIL import Image
-from matplotlib import pyplot as plt
 import torch
 import torchvision.transforms as transforms
 import cv2
@@ -47,46 +46,46 @@ def cv22tensor(cv2_pics):
             tensor = t
     return tensor
 
-
-transform = transforms.Compose(
-    [
-        transforms.ToTensor(),
-        # transforms.Normalize((0.5), (0.5))
-    ]
-)
-
-for n in range(2000, 2007):
-    p_masks = [
-        "./input/positive/{}_mask.jpg".format(n),
-        "./pred32/{}_mask.jpg".format(n),
-    ]
-
-    masks = [utils.binary(transform(Image.open(i)).unsqueeze(0)) for i in p_masks]
-    dice = dice_coeff(masks[0], masks[1], sigmoid=False)
-    print(
-        "pic: {}, iter: -1, dice: {:.4f}, dice_loss: {:.4f}.".format(n, dice, 1 - dice)
+if __name__ == "__main__":
+    transform = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            # transforms.Normalize((0.5), (0.5))
+        ]
     )
 
-    mask2 = tensor2cv2(masks[1])[0]
+    for n in range(2000, 2007):
+        p_masks = [
+            "./input/positive/{}_mask.jpg".format(n),
+            "./pred50_512/{}_mask.jpg".format(n),
+        ]
 
-    kernel = np.ones((5, 5), np.uint8)
-    mask2_erosion1 = cv2.erode(mask2, kernel, iterations=1)
-    mask2_erosion10 = cv2.dilate(mask2_erosion1, kernel, iterations=1)
-    for i in range(9):
-        mask2_erosion10 = cv2.erode(
-            mask2_erosion10, np.ones((2, 2), np.uint8), iterations=1
-        )
-        # mask2_erosion10 = cv2.dilate(mask2_erosion10, np.ones((2, 2), np.uint8), iterations=1)
-        dice = dice_coeff(masks[0], cv22tensor([mask2_erosion10]), sigmoid=False)
+        masks = [utils.binary(transform(Image.open(i)).unsqueeze(0)) for i in p_masks]
+        dice = dice_coeff(masks[0], masks[1], sigmoid=False)
         print(
-            "pic: {}, iter: {}, dice: {:.4f}, dice_loss: {:.4f}.".format(
-                n, i, dice, 1 - dice
-            )
+            "pic: {}, iter: -1, dice: {:.4f}, dice_loss: {:.4f}.".format(n, dice, 1 - dice)
         )
-        # cv2.imshow("mask2_" + str(i), mask2_erosion10)
 
-    # cv2.imshow("mask2", mask2)
-    # # cv2.imshow("mask2_erosion1", mask2_erosion1)
-    # cv2.imshow("mask2_erosion10", mask2_erosion10)
-    # cv2.waitKey()
-    # cv2.destroyAllWindows() # important part!
+        mask2 = tensor2cv2(masks[1])[0]
+
+        kernel = np.ones((5, 5), np.uint8)
+        mask2_erosion1 = cv2.erode(mask2, kernel, iterations=1)
+        mask2_erosion10 = cv2.dilate(mask2_erosion1, kernel, iterations=1)
+        for i in range(3):
+            mask2_erosion10 = cv2.erode(
+                mask2_erosion10, kernel, iterations=1
+            )
+            mask2_erosion10 = cv2.dilate(mask2_erosion10, kernel, iterations=1)
+            dice = dice_coeff(masks[0], cv22tensor([mask2_erosion10]), sigmoid=False)
+            print(
+                "pic: {}, iter: {}, dice: {:.4f}, dice_loss: {:.4f}.".format(
+                    n, i, dice, 1 - dice
+                )
+            )
+            # cv2.imshow("mask2_" + str(i), mask2_erosion10)
+
+        # cv2.imshow("mask2", mask2)
+        # # cv2.imshow("mask2_erosion1", mask2_erosion1)
+        # cv2.imshow("mask2_erosion10", mask2_erosion10)
+        # cv2.waitKey()
+        # cv2.destroyAllWindows() # important part!

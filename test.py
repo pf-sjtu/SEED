@@ -20,14 +20,14 @@ from constants import device, p_model_param
 
 # In[0]
 train = False
-size_thd = 512
+size_thd = 1024
 pred_batch = 4
 
 transform = transforms.Compose(
     [transforms.ToTensor(), transforms.Normalize((0.5), (0.5))]
 )
 
-test_set = SEED_data(train=train, transform=transform if train else None)
+test_set = SEED_data(train=train)
 
 testloader = torch.utils.data.DataLoader(
     test_set,
@@ -88,10 +88,10 @@ with torch.no_grad():
         # y_pred_a = y_pred[0, :, :]
         # # y_pred_a.dtype = 'uint8'
         # img_pred = Image.fromarray((y_pred_a), mode="L")
-        # # img_pred.save(utils.gen_p_pred_mask(p_data, "pred"))
-        img_pred.show()
+        img_pred.save(utils.gen_p_pred_mask(p_data, "pred"))
+        # img_pred.show()
         # # windows[0][0].img.show()
         pass
-        break
+        # break
 # In[1]
 # In[1]
