@@ -116,8 +116,8 @@ class Img_window():
         self.img_size = img_size
         y_pos = (size[0] - overlap[0]) * iy
         x_pos = (size[1] - overlap[1]) * ix
-        self.y_pos = (y_pos, y_pos+size[0] if y_pos+size[0] < img_size[0] else img_size[0])
-        self.x_pos = (x_pos, x_pos+size[1] if y_pos+size[1] < img_size[1] else img_size[1])
+        self.y_pos = (y_pos if y_pos+size[0] < img_size[0] else img_size[0] - size[0], y_pos+size[0] if y_pos+size[0] < img_size[0] else img_size[0])
+        self.x_pos = (x_pos if y_pos+size[1] < img_size[1] else img_size[1] - size[1], x_pos+size[1] if y_pos+size[1] < img_size[1] else img_size[1])
 
         img.load()
         self.band = img.im.bands
@@ -169,19 +169,23 @@ class Img_window():
     def merge_windows(windows, method='mean'):
         img_size = windows[0][0].img_size
         band = windows[0][0].band
-        size = windows[0][0].size
-        overlap = windows[0][0].overlap
         img_size = (img_size[0], img_size[1], band)
         img_a = np.zeros(img_size, dtype='uint16')
         for w_l in windows:
             for w in w_l:
                 img_a[w.y_pos[0]: w.y_pos[1], w.x_pos[0]: w.x_pos[1]] += w.a
-        dubble_banner_upos = [(size[0] - overlap[0]) * (i + 1) for i in range(len(windows) - 1)]
-        dubble_banner_lpos = [(size[1] - overlap[1]) * (i + 1) for i in range(len(w_l) - 1)]
+        # dubble_banner_upos = [(size[0] - overlap[0]) * (i + 1) for i in range(len(windows) - 1)]
+        # dubble_banner_lpos = [(size[1] - overlap[1]) * (i + 1) for i in range(len(w_l) - 1)]
+        dubble_banner_upos = [(windows[i+1][0].y_pos[0], windows[i][0].y_pos[1]) for i in range(len(windows) - 1)]
+        dubble_banner_lpos = [(windows[0][i+1].x_pos[0], windows[0][i].x_pos[1]) for i in range(len(w_l) - 1)]
         for upos in dubble_banner_upos:
-            img_a[upos: upos + overlap[0], :] = img_a[upos: upos + overlap[0], :] // 2
+            img_a[upos[0]: upos[1], :] = img_a[upos[0]: upos[1], :] // 2
         for lpos in dubble_banner_lpos:
-            img_a[:, lpos: lpos + overlap[1]] = img_a[:, lpos: lpos + overlap[1]] // 2
+            img_a[:, lpos[0]: lpos[1]] = img_a[:, lpos[0]: lpos[1]] // 2
+        # for upos in dubble_banner_upos:
+        #     img_a[upos: upos + overlap[0], :] = img_a[upos: upos + overlap[0], :] // 2
+        # for lpos in dubble_banner_lpos:
+        #     img_a[:, lpos: lpos + overlap[1]] = img_a[:, lpos: lpos + overlap[1]] // 2
         img = Image.fromarray(img_a.astype('uint8'))
         return img
 
@@ -219,9 +223,9 @@ def _main():
     utils.seg_imshow(data[0], target[0], path[0], alpha=0.5)
 
 if __name__ == "__main__":
-    _main()
-    # img = Image.open('./input/test/3004.jpg')
-    # w = Img_window.gen_windows(img, size=0.3)
-    # img2 = Img_window.merge_windows(w)
-    # img2.save('./test_3004.jpg')
+    # _main()
+    img = Image.open('./input/test/3004.jpg')
+    w = Img_window.gen_windows(img, size=0.3)
+    img2 = Img_window.merge_windows(w)
+    img2.save('./test_3004.jpg')
 
