@@ -6,10 +6,9 @@ Created on Sat Aug 29 10:18:48 2020
 @email:  im.pengf@outlook.com
 """
 
+import time
 import torch
-import numpy as np
-
-# import torchvision
+import torch.optim as optim
 import torchvision.transforms as T
 import my_trans as T_m
 
@@ -77,9 +76,6 @@ utils.seg_imshow(data[i], target[i], p_data[i], alpha=0.5)
 model = FastFCN(n_class=1).to(device)
 
 # In[2]
-import time
-import torch.optim as optim
-
 loss_func = DiceLoss()
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
 # optimizer = optim.RMSprop(

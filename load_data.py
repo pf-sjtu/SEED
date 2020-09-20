@@ -33,8 +33,8 @@ def pic_size_stats(train=True):
     size_list = [math.prod(Image.open(p).size) for p in p_data]
     return size_list
 
-
 class Img_window:
+    # @profile
     def __init__(self, img, size, overlap, iy, ix):
         self.size = size
         self.overlap = overlap
@@ -55,18 +55,28 @@ class Img_window:
             x_pos + size[1] if x_not_overflow else img_size[1],
         )
 
-        img.load()
+        if img.im is None:
+            img.load()
         self.band = img.im.bands
-        self.a = np.array(img, dtype="uint8")[
+        # self.a = np.array(img, dtype="uint8")[
+        #     self.y_pos[0] : self.y_pos[1], self.x_pos[0] : self.x_pos[1]
+        # ]
+        tmp = np.array(img, dtype="uint8")
+        self.a = tmp[
             self.y_pos[0] : self.y_pos[1], self.x_pos[0] : self.x_pos[1]
-        ]
+        ].copy()
+        del tmp
         self.img = Image.fromarray(self.a)
 
     def replace_pic(self, img):
         self.img = img
         self.a = np.array(img, dtype="uint8")
-        img.load()
+        if img.im is None:
+            img.load()
         self.band = img.im.bands
+
+    def img(self):
+        return Image.fromarray(self.a)
 
     @staticmethod
     def _img_size(img):
@@ -113,7 +123,9 @@ class Img_window:
                 math.ceil((img_size[1] - overlap[1]) / (size[1] - overlap[1]))
             ):
                 img_windows_y.append(Img_window(img, size, overlap, iy, ix))
+                # break
             img_windows.append(img_windows_y)
+            # break
         return img_windows
 
     @staticmethod
@@ -200,14 +212,9 @@ class SEED_data(torch.utils.data.Dataset):
                 p_data_n_list = []
             else:
                 p_data_n_list = utils.listdir(C.p_train_n)
-            # p_target_p_list = [utils.gen_p_mask(i) for i in p_data_list]
             self.data_positive = []
             for p_data_p in p_data_p_list:
                 p_target_p = utils.gen_p_mask(p_data_p)
-                # el_data = np.array(Image.open(p_data_p), dtype=np.uint8)
-                # el_target = np.array(Image.open(p_target_p), dtype=np.uint8)
-                # data_target = np.concatenate((el_data, el_target[:, :, None]), axis=2)
-                # data_target = np.transpose(data_target, (2, 0, 1))  # CHW
                 el_data = Image.open(p_data_p)
                 el_target = Image.open(p_target_p)
                 r, g, b = el_data.split()
@@ -225,7 +232,6 @@ class SEED_data(torch.utils.data.Dataset):
             self.data = [
                 Image.open(p_data)
                 for p_data in p_data_list
-                # np.array(Image.open(p_data), dtype=np.uint8) for p_data in p_data_list
             ]
             self.data_path = p_data_list
 
@@ -235,8 +241,6 @@ class SEED_data(torch.utils.data.Dataset):
                 len(l) * (part[0]) / part[1]
             )
         ]
-
-    # def
 
     def __getitem__(self, index):
         info = {}
@@ -270,8 +274,6 @@ class SEED_data(torch.utils.data.Dataset):
 
 
 def _main():
-
-
     transform = T.Compose([T.ToTensor(), T.Normalize((0.5), (0.5))])
 
     # 5GB memery
@@ -292,10 +294,17 @@ def _main():
 
     utils.seg_imshow(data[0], target[0], path[0], alpha=0.5)
 
+def load():
+    img = Image.open("./input/test/3004.jpg")
+    img.load()
+    w = Img_window.gen_windows(img, size=512, overlap=0.1)
+    img2 = Img_window.merge_windows(w)
+    # t = np.random.random((512, 512, 3))
+    # t = np.random.randint(0,255,(512, 512, 3), dtype='uint8')
+    return img2
 
 if __name__ == "__main__":
-    _main()
-    # img = Image.open("./input/test/3004.jpg")
-    # w = Img_window.gen_windows(img, size=1000, overlap=0.1)
-    # img2 = Img_window.merge_windows(w)
+    # _main()
+    img = load()
+
     # img2.save("./test_3004.jpg")

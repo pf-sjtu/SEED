@@ -54,7 +54,7 @@ with torch.no_grad():
             X_test_l = []
             for w_l in windows:
                 for w in w_l:
-                    X_test_l.append(transform(w.img).unsqueeze(0))
+                    X_test_l.append(transform(w.img()).unsqueeze(0))
             # img2 = Img_window.merge_windows(X_test)
         else:
             X_test_l = [transform(X_test).unsqueeze(0)]
@@ -92,6 +92,6 @@ with torch.no_grad():
         # img_pred.show()
         # # windows[0][0].img.show()
         pass
-        # break
+        break
 # In[1]
 # In[1]
