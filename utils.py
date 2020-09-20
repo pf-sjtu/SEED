@@ -16,14 +16,14 @@ import gdown
 import constants as C
 
 
-def listdir(p_dir, join=True, exclude_mask=True):
+def listdir(p_dir, join=True, exclude_mask=True, ignore_debug=False):
     l = os.listdir(p_dir)
     if exclude_mask:
         l = [i for i in l if ("_mask" not in i) and (" " not in i)]
     l.sort()
     if join:
         l = [os.path.join(p_dir, i) for i in l]
-    if C.DEBUG:
+    if not ignore_debug and C.DEBUG:
         l = l[: C.DEBUG_PIC_LIMIT]
     return l
 
