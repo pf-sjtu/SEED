@@ -20,6 +20,6 @@ p_train_p = "./input/positive"
 p_train_n = "./input/negative"
 p_test = "./input/test"
 p_model_param = "./model50_512_dict.torch"
-p_log = './train.log'
+p_log = "./train.log"
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

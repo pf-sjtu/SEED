@@ -16,10 +16,9 @@ import my_trans as T_m
 import constants as C
 from constants import device
 import utils
-from models.fcn8s import FCN8s as FCN
 from models.fastfcn import FastFCN as FastFCN
 from loss_fn import DiceLoss
-from load_data import SEED_data
+from load_data import SEED_data, da_fetch
 import tqdm
 
 transform = T.Compose(
@@ -100,8 +99,9 @@ optimizer = optim.Adam(model.parameters(), lr=1e-4)
 # )
 
 # In[2]
-epoch = 30
+epoch = 64
 verbose = 1
+log = ""
 
 saved_flag = False
 t1 = time.perf_counter()
@@ -109,55 +109,49 @@ best_test_loss = 999.0
 for e in range(epoch):
     running_loss = 0.0
     # running_loss_init = False
-    for batch, (X_train, y_train, p_data, positive) in tqdm.tqdm(
-        enumerate(trainloader)
-    ):
+    for batch, info_train in tqdm.tqdm(enumerate(trainloader)):
         with torch.no_grad():
-            X_train = X_train.to(device)
-            y_train = y_train.to(device)
-            y_train = (y_train > 0.5).float()
+            X_train, y_train = da_fetch(info_train, ["data", "target"], device=device)
+            utils.binary(y_train)
         optimizer.zero_grad()
         y_train_hat = model(X_train)
         loss = loss_func(y_train_hat, y_train)
         loss.backward()
         optimizer.step()
         running_loss += loss.item()
-        # if verbose > 0 and batch % verbose == 0:
-        model.eval()
-        with torch.no_grad():
-            test_acc, test_loss = 0.0, 0.0
-            for batch_test, (X_test, y_test, p_data, positive) in enumerate(valloader):
-                X_test = X_test.to(device)
-                y_test = y_test.to(device)
-                y_test_hat = model(X_test)
-                test_acc += torch.mean(
-                    ((torch.sigmoid(y_test_hat) > 0.5) == (y_test > 0.5)).float()
-                )
-                y_test = (y_test > 0.5).float()
-                test_loss += loss_func(y_test_hat, y_test)
-            test_acc /= len(valloader)
-            test_loss /= len(valloader)
-            if test_loss < best_test_loss:
-                torch.save(model.state_dict(), C.p_model_param)
-                best_test_loss = test_loss
-                saved_flag = True
-            else:
-                saved_flag = False
-            # if not running_loss_init:
-            #     running_loss_init = True
-            # else:
-            # running_loss /= verbose
-            # running_loss /= len(trainloader)
-            print(
-                "Epoch {}, batch {}: loss = {:.4f}, t_loss = {:.4f}, t_acc = {:.4f} ({:.1f}s){}".format(
-                    e,
-                    batch,
-                    running_loss,
-                    test_loss,
-                    test_acc,
-                    time.perf_counter() - t1,
-                    " saved" if saved_flag else "",
-                )
+        pass
+    model.eval()
+    with torch.no_grad():
+        test_acc, test_loss = 0.0, 0.0
+        for batch_test, info_test in enumerate(valloader):
+            X_test, y_test = da_fetch(info_test, ["data", "target"], device=device)
+            utils.binary(y_test)
+            y_test_hat = model(X_test)
+            test_acc += torch.mean(
+                ((torch.sigmoid(y_test_hat) > 0.5) == (y_test > 0.5)).float()
             )
-            running_loss = 0.0
-        model.train()
+            test_loss += loss_func(y_test_hat, y_test)
+        test_acc /= len(valloader)
+        test_loss /= len(valloader)
+        running_loss /= len(trainloader)
+        if test_loss < best_test_loss:
+            torch.save(model.state_dict(), C.p_model_param)
+            best_test_loss = test_loss
+            saved_flag = True
+        else:
+            saved_flag = False
+        info = "Epoch {}, batch {}: loss = {:.4f}, t_loss = {:.4f}, t_acc = {:.4f} ({:.1f}s){}".format(
+            e,
+            batch,
+            running_loss,
+            test_loss,
+            test_acc,
+            time.perf_counter() - t1,
+            " saved" if saved_flag else "",
+        )
+        log += info + "\n"
+        print(info)
+        with open(C.p_log, "w") as f:
+            f.write(log)
+        running_loss = 0.0
+    model.train()

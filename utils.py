@@ -74,8 +74,12 @@ def seg_imshow(data, target, p_data, alpha=0):
 
 
 def simple_list_collate(batch):
-    item_num = len(batch[0])
-    l = [[item[i] for item in batch] for i in range(item_num)]
+    if isinstance(batch[0], dict):
+        item_keys = batch[0].keys()
+        l = {i: [item[i] for item in batch] for i in item_keys}
+    else:
+        item_num = len(batch[0])
+        l = [[item[i] for item in batch] for i in range(item_num)]
     # data = [item[0] for item in batch]
     # target = [item[1] for item in batch]
     # target = torch.LongTensor(target)
@@ -117,6 +121,7 @@ def binary(tensor):
     tensor[tensor >= mid] = max_val
     tensor[tensor < mid] = min_val
     return tensor
+
 
 # p0 = 3
 # k = 10
